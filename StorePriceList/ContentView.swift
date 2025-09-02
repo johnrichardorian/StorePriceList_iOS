@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-// MARK: - Models
+// models for database
 struct Store: Identifiable {
     let id = UUID()
     let name: String
@@ -25,7 +25,7 @@ struct Product: Identifiable {
     let price: Double
 }
 
-// MARK: - Main View
+// This is for my main view
 struct ContentView: View {
     
     @State private var searchText: String = ""
@@ -33,7 +33,7 @@ struct ContentView: View {
     @State private var showRegister: Bool = false
     @State private var showDashboard: Bool = false
     
-    // Sample Data
+    // Example Data
     let stores: [Store] = [
         Store(
             name: "John's Store",
@@ -71,7 +71,7 @@ struct ContentView: View {
         )
     ]
     
-    // Search Filtering
+    // Search beta filtering
     var filteredStores: [Store] {
         if searchText.isEmpty {
             return stores
@@ -113,7 +113,7 @@ struct ContentView: View {
                 // MARK: Footer
                 FooterView()
             }
-            .frame(width: 402, height: 874) // iPhone 16 Pro logical size
+            .frame(width: 402, height: 874) // iPhone 16 Pro size
             .navigationDestination(isPresented: $showLogin) {
                 LoginView()
             }
@@ -121,7 +121,7 @@ struct ContentView: View {
     }
 }
 
-// MARK: - Header
+// my header
 struct HeaderView: View {
     @Binding var showLogin: Bool
     
@@ -131,7 +131,7 @@ struct HeaderView: View {
                 .ignoresSafeArea(edges: .top)
             
             HStack {
-                // ✅ Login Button
+                // Login Button
                 Button(action: {
                     showLogin = true
                 }) {
@@ -158,7 +158,7 @@ struct HeaderView: View {
     }
 }
 
-// MARK: - SearchBar
+// searchbar
 struct SearchBar: View {
     @Binding var text: String
     
@@ -175,7 +175,6 @@ struct SearchBar: View {
     }
 }
 
-// MARK: - StoreCard
 struct StoreCard: View {
     let store: Store
     
@@ -233,7 +232,7 @@ struct StoreCard: View {
     }
 }
 
-// MARK: - Footer
+// footer again
 struct FooterView: View {
     var body: some View {
         VStack(spacing: 12) {
@@ -278,7 +277,6 @@ struct FooterView: View {
 }
 
 
-// MARK: - Preview
 #Preview {
     ContentView()
 }

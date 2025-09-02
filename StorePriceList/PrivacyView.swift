@@ -8,9 +8,9 @@ import SwiftUI
 struct PrivacyView: View {
     var body: some View {
         ScrollView {
-            VStack(spacing: 30) { // match AboutView spacing
+            VStack(spacing: 30) {
                 
-                // MARK: Header Icon
+                // header content
                 ZStack {
                     Circle()
                         .fill(LinearGradient(colors: [.purple, .pink], startPoint: .topLeading, endPoint: .bottomTrailing))
@@ -23,16 +23,16 @@ struct PrivacyView: View {
                         .frame(width: 55, height: 55)
                         .foregroundColor(.white)
                 }
-                .padding(.top, 30) // same as AboutView
+                .padding(.top, 30)
                 
-                // MARK: Title
+                // Title
                 Text("Privacy Policy")
                     .font(.title)
                     .fontWeight(.bold)
                     .foregroundColor(.primary)
                 
-                // MARK: Privacy Cards
-                VStack(alignment: .leading, spacing: 16) { // consistent spacing
+                // Privacy Cards Content
+                VStack(alignment: .leading, spacing: 16) {
                     PrivacyCard(title: "Data Security", description: "All user data is stored securely.")
                     PrivacyCard(title: "No Selling", description: "We do not sell or share your personal data.")
                     PrivacyCard(title: "Data Usage", description: "Data is only used to enhance app functionality.")
@@ -40,8 +40,8 @@ struct PrivacyView: View {
                 }
                 .padding(.horizontal)
                 
-                // MARK: Footer
-                VStack(spacing: 8) { // match AboutView footer spacing
+                // Footer content
+                VStack(spacing: 8) {
                     Text("Version 1.0.0")
                         .font(.footnote)
                         .foregroundColor(.gray)
@@ -54,7 +54,7 @@ struct PrivacyView: View {
                 
                 Spacer()
             }
-            .padding() // match AboutView padding
+            .padding()
         }
         .background(
             LinearGradient(colors: [Color(.systemGray6), Color.white], startPoint: .top, endPoint: .bottom)
@@ -65,13 +65,13 @@ struct PrivacyView: View {
     }
 }
 
-// MARK: - Privacy Card Component
+// This is rivacy Card Component
 struct PrivacyCard: View {
     let title: String
     let description: String
     
     var body: some View {
-        HStack(alignment: .top, spacing: 12) { // same as AboutCard
+        HStack(alignment: .top, spacing: 12) {
             ZStack {
                 Circle()
                     .fill(Color.purple.opacity(0.15))
@@ -101,7 +101,6 @@ struct PrivacyCard: View {
     }
 }
 
-// MARK: - Preview
 #Preview {
     NavigationStack {
         PrivacyView()

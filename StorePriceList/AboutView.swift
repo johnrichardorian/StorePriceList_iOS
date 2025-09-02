@@ -12,7 +12,7 @@ struct AboutView: View {
         ScrollView {
             VStack(spacing: 30) {
                 
-                // MARK: App Icon / Logo
+                // This is for App Icon / Logo
                 ZStack {
                     Circle()
                         .fill(LinearGradient(colors: [.blue, .purple], startPoint: .topLeading, endPoint: .bottomTrailing))
@@ -27,7 +27,7 @@ struct AboutView: View {
                 }
                 .padding(.top, 30)
                 
-                // MARK: Title & Subtitle
+                // This if for Title & Subtitle
                 VStack(spacing: 8) {
                     Text("Store Price List")
                         .font(.title)
@@ -39,7 +39,7 @@ struct AboutView: View {
                         .foregroundColor(.secondary)
                 }
                 
-                // MARK: App Description
+                // This is for Content and Description
                 VStack(alignment: .leading, spacing: 16) {
                     AboutCard(
                         icon: "magnifyingglass",
@@ -59,7 +59,7 @@ struct AboutView: View {
                 }
                 .padding(.horizontal)
                 
-                // MARK: Footer
+                // Footer
                 VStack(spacing: 8) {
                     Text("Version 1.0.0")
                         .font(.footnote)
@@ -85,7 +85,7 @@ struct AboutView: View {
     }
 }
 
-// MARK: - About Card Component
+// About Card Component
 struct AboutCard: View {
     let icon: String
     let title: String
@@ -123,7 +123,6 @@ struct AboutCard: View {
     }
 }
 
-// MARK: - Preview
 #Preview {
     NavigationStack {
         AboutView()

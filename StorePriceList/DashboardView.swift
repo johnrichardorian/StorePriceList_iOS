@@ -12,7 +12,7 @@ struct DashboardView: View {
     @State private var selectedTab = 0
     @State private var isLoggedOut: Bool = false
     
-    // Store details
+    // Store details sample data
     @State private var storeName: String = "John's Store"
     @State private var address: String = "Lucena"
     @State private var phone: String = "0932032621398"
@@ -23,14 +23,14 @@ struct DashboardView: View {
     // Search text
     @State private var searchText: String = ""
     
-    // Products
+    // Products sample data
     @State private var products: [InventoryProduct] = [
         InventoryProduct(name: "Bawang", description: "Seasoning", price: 1),
         InventoryProduct(name: "Sibuyas", description: "Seasoning", price: 2),
         InventoryProduct(name: "Toyo", description: "Pang sahog", price: 4)
     ]
     
-    // Modals
+    // Modals controller show
     @State private var showCreateForm = false
     @State private var showEditForm = false
     
@@ -106,10 +106,10 @@ struct DashboardView: View {
                     ContentView()
                 }
                 
-                // ✅ Overlay for Add Product
+                // This is modal for add product
                 if showCreateForm {
                     ZStack {
-                        // Blurred background with dim
+                        
                         Color.black.opacity(0.3)
                             .ignoresSafeArea()
                             .background(.ultraThinMaterial)
@@ -137,7 +137,7 @@ struct DashboardView: View {
                     .animation(.spring(), value: showCreateForm)
                 }
                 
-                // ✅ Overlay for Edit Product
+                // modal for edit product
                 if showEditForm, let first = products.first {
                     ZStack {
                         Color.black.opacity(0.3)

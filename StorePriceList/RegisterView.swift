@@ -17,9 +17,9 @@ struct RegisterView: View {
     
     var body: some View {
         VStack {
-            Spacer().frame(height: 40) // Safe area / Dynamic island
+            Spacer().frame(height: 40)
             
-            // 🛒 Logo / Icon
+            // Logo / Icon
             Image(systemName: "person.badge.plus.fill")
                 .resizable()
                 .scaledToFit()

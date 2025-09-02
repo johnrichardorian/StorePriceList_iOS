@@ -20,7 +20,7 @@ struct LoginView: View {
                 
                 Spacer().frame(height: 20) // Safe area / Dynamic island
                 
-                // 🛒 Store Logo / Icon
+                // Store Logo / Icon
                 Image(systemName: "cart.fill")
                     .resizable()
                     .scaledToFit()
@@ -75,8 +75,8 @@ struct LoginView: View {
                 
                 // Login Button
                 Button(action: {
-                    // ⚡ For now: always allow login
-                    // You can add validation here later
+                    // For now it always allow login for sample
+                    // add validation here later
                     isLoggedIn = true
                 }) {
                     Text("Login")
@@ -93,13 +93,13 @@ struct LoginView: View {
                 HStack {
                     Text("Don’t have an account?")
                     NavigationLink("Register") {
-                        RegisterView() // must exist as a separate file
+                        RegisterView()
                     }
                     .foregroundColor(.blue)
                 }
                 .padding(.top, 20)
                 
-                // Divider
+                // Divider for login and guest button
                 HStack {
                     Rectangle().frame(height: 1).foregroundColor(.gray.opacity(0.4))
                     Text("OR")
@@ -136,9 +136,8 @@ struct LoginView: View {
             }
             .navigationBarBackButtonHidden(true) // hides default back button
             
-            // ✅ Modern navigationDestination
             .navigationDestination(isPresented: $isLoggedIn) {
-                DashboardView()
+                //DashboardView()
             }
         }
     }

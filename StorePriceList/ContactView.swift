@@ -10,7 +10,7 @@ struct ContactView: View {
         ScrollView {
             VStack(spacing: 30) {
                 
-                // MARK: Header Icon
+                // header area
                 ZStack {
                     Circle()
                         .fill(LinearGradient(colors: [.green, .blue], startPoint: .topLeading, endPoint: .bottomTrailing))
@@ -25,7 +25,7 @@ struct ContactView: View {
                 }
                 .padding(.top, 30)
                 
-                // MARK: Title & Subtitle
+                // title content
                 VStack(spacing: 8) {
                     Text("Contact Us")
                         .font(.title)
@@ -37,7 +37,7 @@ struct ContactView: View {
                         .foregroundColor(.secondary)
                 }
                 
-                // MARK: Contact Cards
+                // contact cards content
                 VStack(spacing: 16) {
                     ContactCard(icon: "phone.fill", title: "Phone", description: "0932 032 61398")
                     ContactCard(icon: "envelope.fill", title: "Email", description: "support@storepricelist.com")
@@ -46,7 +46,7 @@ struct ContactView: View {
                 }
                 .padding(.horizontal)
                 
-                // MARK: Footer
+                // about footer
                 VStack(spacing: 8) {
                     Text("Version 1.0.0")
                         .font(.footnote)
@@ -72,7 +72,7 @@ struct ContactView: View {
     }
 }
 
-// MARK: - Contact Card Component
+// Contact Card Component
 struct ContactCard: View {
     let icon: String
     let title: String
@@ -113,7 +113,6 @@ struct ContactCard: View {
 }
 
 
-// MARK: - Preview
 #Preview {
     NavigationStack {
         ContactView()
