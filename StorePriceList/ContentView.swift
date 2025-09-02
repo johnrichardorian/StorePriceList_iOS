@@ -31,6 +31,7 @@ struct ContentView: View {
     @State private var searchText: String = ""
     @State private var showLogin: Bool = false
     @State private var showRegister: Bool = false
+    @State private var showDashboard: Bool = false
     
     // Sample Data
     let stores: [Store] = [
@@ -240,19 +241,22 @@ struct FooterView: View {
                 .padding(.horizontal)
 
             HStack(spacing: 40) {
-                Button(action: {}) {
+                NavigationLink(destination: AboutView()) {
                     Label("About", systemImage: "info.circle")
                         .labelStyle(.titleAndIcon)
                 }
-                Button(action: {}) {
+                
+                NavigationLink(destination: ContactView()) {
                     Label("Contact", systemImage: "envelope")
                         .labelStyle(.titleAndIcon)
                 }
-                Button(action: {}) {
+                
+                NavigationLink(destination: TermsView()) {
                     Label("Terms", systemImage: "doc.plaintext")
                         .labelStyle(.titleAndIcon)
                 }
-                Button(action: {}) {
+                
+                NavigationLink(destination: PrivacyView()) {
                     Label("Privacy", systemImage: "lock.shield")
                         .labelStyle(.titleAndIcon)
                 }
@@ -272,6 +276,7 @@ struct FooterView: View {
         .foregroundColor(.blue)
     }
 }
+
 
 // MARK: - Preview
 #Preview {

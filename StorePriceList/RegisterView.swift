@@ -104,32 +104,7 @@ struct RegisterView: View {
             }
             .padding(.top, 20)
             
-            // Register with Google
-            Button(action: {
-                // Handle Google Register
-            }) {
-                HStack {
-                    Image("google_logo") // 👈 use your Assets image
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 20, height: 20)
-                    
-                    Text("Register with Google")
-                        .fontWeight(.medium)
-                        .foregroundColor(.black)
-                }
-                .frame(maxWidth: .infinity)
-                .padding()
-                .background(Color.white)
-                .overlay(
-                    RoundedRectangle(cornerRadius: 10)
-                        .stroke(Color.gray.opacity(0.5), lineWidth: 1)
-                )
-                .cornerRadius(10)
-                .shadow(color: Color.black.opacity(0.1), radius: 2, x: 0, y: 2)
-                .padding(.horizontal)
-            }
-            .padding(.top, 10)
+            
             
             // OR Divider
             HStack {
