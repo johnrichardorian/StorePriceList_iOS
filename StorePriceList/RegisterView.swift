@@ -6,20 +6,31 @@
 //
 
 import SwiftUI
+import SwiftData
 
 struct RegisterView: View {
+    @Environment(\.modelContext) private var modelContext
+    @Query private var accounts: [Account]
+    @EnvironmentObject var auth: AuthState
     @State private var name: String = ""
     @State private var email: String = ""
     @State private var password: String = ""
     @State private var confirmPassword: String = ""
     @State private var isPasswordVisible: Bool = false
     @State private var isConfirmPasswordVisible: Bool = false
+    @State private var didRegister: Bool = false
+    @State private var showError: Bool = false
+    @State private var showSuccess: Bool = false
+    @State private var errorMessage: String = ""
+    func isValidEmail(_ email: String) -> Bool {
+        let pattern = #"^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$"#
+        return email.range(of: pattern, options: [.regularExpression, .caseInsensitive]) != nil
+    }
     
     var body: some View {
         VStack {
             Spacer().frame(height: 40)
             
-            // Logo / Icon
             Image(systemName: "person.badge.plus.fill")
                 .resizable()
                 .scaledToFit()
@@ -27,72 +38,123 @@ struct RegisterView: View {
                 .foregroundColor(.green)
                 .padding(.bottom, 10)
             
-            // Title
             Text("Create Your Account")
                 .font(.title)
                 .fontWeight(.bold)
                 .padding(.bottom, 5)
             
-            // Subtitle
             Text("Register to access Store Price List")
                 .font(.subheadline)
                 .foregroundColor(.gray)
                 .padding(.bottom, 30)
             
-            // Name
-            TextField("Full Name", text: $name)
-                .textInputAutocapitalization(.words)
+            VStack(alignment: .leading, spacing: 6) {
+                TextField("Full Name", text: $name)
+                    .textInputAutocapitalization(.words)
+                    .autocorrectionDisabled(true)
+                    .padding()
+                    .background(Color(.systemGray6))
+                    .cornerRadius(10)
+            }
+            .padding(.horizontal)
+            
+            VStack(alignment: .leading, spacing: 6) {
+                TextField("Email", text: $email)
+                    .keyboardType(.emailAddress)
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled(true)
+                    .padding()
+                    .background(Color(.systemGray6))
+                    .cornerRadius(10)
+            }
+            .padding(.horizontal)
+            
+            VStack(alignment: .leading, spacing: 6) {
+                HStack {
+                    if isPasswordVisible {
+                        TextField("Password", text: $password)
+                            .textInputAutocapitalization(.never)
+                            .autocorrectionDisabled(true)
+                    } else {
+                        SecureField("Password", text: $password)
+                            .textInputAutocapitalization(.never)
+                            .autocorrectionDisabled(true)
+                    }
+                    Button(action: { isPasswordVisible.toggle() }) {
+                        Image(systemName: isPasswordVisible ? "eye.slash.fill" : "eye.fill")
+                            .foregroundColor(.gray)
+                    }
+                }
                 .padding()
                 .background(Color(.systemGray6))
                 .cornerRadius(10)
-                .padding(.horizontal)
+            }
+            .padding(.horizontal)
             
-            // Email
-            TextField("Email", text: $email)
-                .keyboardType(.emailAddress)
-                .textInputAutocapitalization(.never)
+            VStack(alignment: .leading, spacing: 6) {
+                HStack {
+                    if isConfirmPasswordVisible {
+                        TextField("Confirm Password", text: $confirmPassword)
+                            .textInputAutocapitalization(.never)
+                            .autocorrectionDisabled(true)
+                    } else {
+                        SecureField("Confirm Password", text: $confirmPassword)
+                            .textInputAutocapitalization(.never)
+                            .autocorrectionDisabled(true)
+                    }
+                    Button(action: { isConfirmPasswordVisible.toggle() }) {
+                        Image(systemName: isConfirmPasswordVisible ? "eye.slash.fill" : "eye.fill")
+                            .foregroundColor(.gray)
+                    }
+                }
                 .padding()
                 .background(Color(.systemGray6))
                 .cornerRadius(10)
-                .padding(.horizontal)
-            
-            // Password
-            HStack {
-                if isPasswordVisible {
-                    TextField("Password", text: $password)
-                } else {
-                    SecureField("Password", text: $password)
-                }
-                Button(action: { isPasswordVisible.toggle() }) {
-                    Image(systemName: isPasswordVisible ? "eye.slash.fill" : "eye.fill")
-                        .foregroundColor(.gray)
-                }
             }
-            .padding()
-            .background(Color(.systemGray6))
-            .cornerRadius(10)
             .padding(.horizontal)
             
-            // Confirm Password
-            HStack {
-                if isConfirmPasswordVisible {
-                    TextField("Confirm Password", text: $confirmPassword)
-                } else {
-                    SecureField("Confirm Password", text: $confirmPassword)
-                }
-                Button(action: { isConfirmPasswordVisible.toggle() }) {
-                    Image(systemName: isConfirmPasswordVisible ? "eye.slash.fill" : "eye.fill")
-                        .foregroundColor(.gray)
-                }
-            }
-            .padding()
-            .background(Color(.systemGray6))
-            .cornerRadius(10)
-            .padding(.horizontal)
-            
-            // Register Button
             Button(action: {
-                // Handle register logic here
+                let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
+                let trimmedEmail = email.trimmingCharacters(in: .whitespacesAndNewlines)
+                guard !trimmedName.isEmpty else {
+                    errorMessage = "Enter your full name"
+                    showError = true
+                    return
+                }
+                guard isValidEmail(trimmedEmail) else {
+                    errorMessage = "Enter a valid email address"
+                    showError = true
+                    return
+                }
+                guard password.count >= 6 else {
+                    errorMessage = "Password must be at least 6 characters"
+                    showError = true
+                    return
+                }
+                guard password == confirmPassword else {
+                    errorMessage = "Passwords do not match"
+                    showError = true
+                    return
+                }
+                guard accounts.first(where: { $0.email.lowercased() == trimmedEmail.lowercased() }) == nil else {
+                    errorMessage = "Email already registered"
+                    showError = true
+                    return
+                }
+                let newEmail = trimmedEmail.lowercased()
+                let newName = trimmedName
+                let account = Account(email: newEmail, name: newName, password: password)
+                modelContext.insert(account)
+                try? modelContext.save()
+                
+                auth.login(email: newEmail, name: newName)
+                
+                name = ""
+                email = ""
+                password = ""
+                confirmPassword = ""
+                
+                showSuccess = true
             }) {
                 Text("Register")
                     .frame(maxWidth: .infinity)
@@ -103,10 +165,20 @@ struct RegisterView: View {
                     .padding(.horizontal)
             }
             .padding(.top, 20)
+            .navigationDestination(isPresented: $didRegister) { DashboardView() }
+            .alert("Registration Error", isPresented: $showError) {
+                Button("OK", role: .cancel) { }
+            } message: {
+                Text(errorMessage)
+            }
+            .alert("Account Created Successfully!", isPresented: $showSuccess) {
+                Button("Continue to Dashboard") {
+                    didRegister = true
+                }
+            } message: {
+                Text("Let's set up your store details.")
+            }
             
-            
-            
-            // OR Divider
             HStack {
                 Rectangle()
                     .frame(height: 1)
@@ -121,7 +193,6 @@ struct RegisterView: View {
             .padding(.vertical, 15)
             .padding(.horizontal)
             
-            // Continue as Guest
             NavigationLink(destination: ContentView()) {
                 HStack {
                     Image(systemName: "person.fill")
@@ -142,7 +213,6 @@ struct RegisterView: View {
             }
             .padding(.top, 10)
             
-            // Already have account? Login
             HStack {
                 Text("Already have an account?")
                 NavigationLink("Login") {
@@ -154,13 +224,12 @@ struct RegisterView: View {
             
             Spacer()
             
-            // Small footer
             Text("Your data is safe with Store Price List")
                 .font(.footnote)
                 .foregroundColor(.gray)
                 .padding(.bottom, 20)
         }
-        .navigationBarBackButtonHidden(true) // hides default back button
+        .navigationBarBackButtonHidden(true)
     }
 }
 

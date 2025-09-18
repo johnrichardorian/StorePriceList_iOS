@@ -6,33 +6,50 @@
 //
 
 import SwiftUI
+import SwiftData
 
 struct DashboardView: View {
-    
+    @EnvironmentObject var auth: AuthState
+    @Environment(\.modelContext) private var modelContext
+    @Query private var stores: [StoreEntity]
     @State private var selectedTab = 0
     @State private var isLoggedOut: Bool = false
+    @State private var showLogoutConfirm: Bool = false
+    @State private var showDeleteConfirm: Bool = false
+    @State private var pendingDelete: InventoryProduct? = nil
+    @State private var showSavedAlert: Bool = false
+    @State private var savedMessage: String = ""
     
-    // Store details sample data
-    @State private var storeName: String = "John's Store"
-    @State private var address: String = "Lucena"
-    @State private var phone: String = "0932032621398"
-    @State private var email: String = "john@gmail.com"
-    @State private var zip: String = "4302"
-    @State private var description: String = "Tindahan"
+    // Store details (bound to first store entity)
+    @State private var storeName: String = ""
+    @State private var address: String = ""
+    @State private var phone: String = ""
+    @State private var email: String = ""
+    @State private var zip: String = ""
+    @State private var description: String = ""
     
     // Search text
     @State private var searchText: String = ""
     
-    // Products sample data
-    @State private var products: [InventoryProduct] = [
-        InventoryProduct(name: "Bawang", description: "Seasoning", price: 1),
-        InventoryProduct(name: "Sibuyas", description: "Seasoning", price: 2),
-        InventoryProduct(name: "Toyo", description: "Pang sahog", price: 4)
-    ]
+    // Products (from SwiftData)
+    @State private var products: [InventoryProduct] = []
     
-    // Modals controller show
+    // Modals
     @State private var showCreateForm = false
     @State private var showEditForm = false
+    @State private var productBeingEdited: InventoryProduct? = nil
+    
+    private var isSaveEnabled: Bool {
+        guard let ownerEmail = auth.currentEmail?.lowercased(),
+              let owned = stores.first(where: { $0.ownerEmail?.lowercased() == ownerEmail }) else { return false }
+        if owned.name != storeName { return true }
+        if owned.address != address { return true }
+        if owned.phone != phone { return true }
+        if owned.email != email { return true }
+        if owned.zip != zip { return true }
+        if owned.storeDescription != description { return true }
+        return false
+    }
     
     var body: some View {
         NavigationStack {
@@ -41,7 +58,7 @@ struct DashboardView: View {
                     
                     // Header
                     HStack {
-                        Text("Hello, John Richard Orian")
+                        Text("Hello, \(auth.currentName ?? "Guest")")
                             .font(.headline)
                             .fontWeight(.bold)
                             .foregroundColor(.white)
@@ -49,7 +66,7 @@ struct DashboardView: View {
                         Spacer()
                         
                         Button(action: {
-                            isLoggedOut = true
+                            showLogoutConfirm = true
                         }) {
                             HStack(spacing: 6) {
                                 Image(systemName: "rectangle.portrait.and.arrow.right")
@@ -87,12 +104,41 @@ struct DashboardView: View {
                                                  zip: $zip,
                                                  phone: $phone,
                                                  email: $email,
-                                                 description: $description)
+                                                 description: $description,
+                                                 isSaveEnabled: isSaveEnabled,
+                                                 onSave: {
+                                                    guard auth.isLoggedIn else { return }
+                                                    let target: StoreEntity?
+                                                    if let emailOwner = auth.currentEmail {
+                                                        target = stores.first(where: { $0.ownerEmail?.lowercased() == emailOwner.lowercased() })
+                                                    } else {
+                                                        target = nil
+                                                    }
+                                                    guard let store = target else { return }
+                                                    store.name = storeName
+                                                    store.address = address
+                                                    store.phone = phone
+                                                    store.email = email
+                                                    store.zip = zip
+                                                    store.storeDescription = description
+                                                    try? modelContext.save()
+                                                    savedMessage = "Store details saved"
+                                                    showSavedAlert = true
+                                                 })
                             } else {
                                 InventoryView(searchText: $searchText,
                                               products: $products,
                                               showCreateForm: $showCreateForm,
-                                              showEditForm: $showEditForm)
+                                              showEditForm: $showEditForm,
+                                              isReadOnly: !auth.isLoggedIn,
+                                              onDelete: { item in
+                                                pendingDelete = item
+                                                showDeleteConfirm = true
+                                              },
+                                              onEdit: { item in
+                                                productBeingEdited = item
+                                                showEditForm = true
+                                              })
                             }
                         }
                         .padding()
@@ -105,11 +151,23 @@ struct DashboardView: View {
                 .fullScreenCover(isPresented: $isLoggedOut) {
                     ContentView()
                 }
+                .alert("Confirm Logout", isPresented: $showLogoutConfirm) {
+                    Button("Cancel", role: .cancel) { }
+                    Button("Logout", role: .destructive) {
+                        auth.logout()
+                        isLoggedOut = true
+                    }
+                } message: {
+                    Text("Are you sure you want to logout?")
+                }
+                .alert(savedMessage, isPresented: $showSavedAlert) {
+                    Button("OK", role: .cancel) { }
+                }
                 
-                // This is modal for add product
+                // ✅ Overlay for Add Product
                 if showCreateForm {
                     ZStack {
-                        
+                        // Blurred background with dim
                         Color.black.opacity(0.3)
                             .ignoresSafeArea()
                             .background(.ultraThinMaterial)
@@ -121,9 +179,26 @@ struct DashboardView: View {
                             title: "Add Product",
                             name: "",
                             description: "",
-                            price: ""
+                            price: "",
+                            existingNames: existingProductNames(),
+                            excludeName: nil
                         ) {
                             showCreateForm = false
+                        } onSave: { name, description, price in
+                            guard auth.isLoggedIn else { return }
+                            let target: StoreEntity?
+                            if let emailOwner = auth.currentEmail {
+                                target = stores.first(where: { $0.ownerEmail?.lowercased() == emailOwner.lowercased() })
+                            } else {
+                                target = nil
+                            }
+                            guard let store = target else { return }
+                            let p = ProductEntity(name: name, productDescription: description, price: price)
+                            store.products.append(p)
+                            try? modelContext.save()
+                            reloadFromStore()
+                            savedMessage = "Product added"
+                            showSavedAlert = true
                         }
                         .frame(maxWidth: 350)
                         .background(
@@ -137,23 +212,45 @@ struct DashboardView: View {
                     .animation(.spring(), value: showCreateForm)
                 }
                 
-                // modal for edit product
-                if showEditForm, let first = products.first {
+                // ✅ Overlay for Edit Product
+                if showEditForm, let editing = productBeingEdited {
                     ZStack {
                         Color.black.opacity(0.3)
                             .ignoresSafeArea()
                             .background(.ultraThinMaterial)
                             .onTapGesture {
                                 showEditForm = false
+                                productBeingEdited = nil
                             }
                         
                         ProductFormView(
                             title: "Edit Product",
-                            name: first.name,
-                            description: first.description,
-                            price: String(first.price)
+                            name: editing.name,
+                            description: editing.description,
+                            price: String(editing.price),
+                            existingNames: existingProductNames(),
+                            excludeName: editing.name
                         ) {
                             showEditForm = false
+                            productBeingEdited = nil
+                        } onSave: { name, description, price in
+                            guard auth.isLoggedIn else { return }
+                            let target: StoreEntity?
+                            if let emailOwner = auth.currentEmail {
+                                target = stores.first(where: { $0.ownerEmail?.lowercased() == emailOwner.lowercased() })
+                            } else {
+                                target = nil
+                            }
+                            guard let store = target, let original = productBeingEdited else { return }
+                            if let idx = store.products.firstIndex(where: { $0.name == original.name && $0.productDescription == original.description && $0.price == original.price }) {
+                                store.products[idx].name = name
+                                store.products[idx].productDescription = description
+                                store.products[idx].price = price
+                                try? modelContext.save()
+                                reloadFromStore()
+                                savedMessage = "Product updated"
+                                showSavedAlert = true
+                            }
                         }
                         .frame(maxWidth: 350)
                         .background(
@@ -167,6 +264,29 @@ struct DashboardView: View {
                     .animation(.spring(), value: showEditForm)
                 }
             }
+        }
+        .onAppear { ensureOwnedStoreAndBind() }
+        .alert("Delete Product?", isPresented: $showDeleteConfirm) {
+            Button("Cancel", role: .cancel) { pendingDelete = nil }
+            Button("Delete", role: .destructive) {
+                guard auth.isLoggedIn, let item = pendingDelete else { pendingDelete = nil; return }
+                let target: StoreEntity?
+                if let emailOwner = auth.currentEmail {
+                    target = stores.first(where: { $0.ownerEmail?.lowercased() == emailOwner.lowercased() })
+                } else {
+                    target = nil
+                }
+                guard let store = target else { pendingDelete = nil; return }
+                if let idx = store.products.firstIndex(where: { $0.name == item.name && $0.productDescription == item.description && $0.price == item.price }) {
+                    let entity = store.products[idx]
+                    modelContext.delete(entity)
+                    try? modelContext.save()
+                    reloadFromStore()
+                }
+                pendingDelete = nil
+            }
+        } message: {
+            Text("This action cannot be undone.")
         }
     }
 }
@@ -187,6 +307,7 @@ struct StoreDetailsView: View {
     @Binding var phone: String
     @Binding var email: String
     @Binding var description: String
+    var isSaveEnabled: Bool = false
     
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -197,21 +318,42 @@ struct StoreDetailsView: View {
             Group {
                 field("Store Name", text: $storeName)
                 field("Address", text: $address)
-                field("Zip Code", text: $zip)
-                field("Phone", text: $phone)
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Zip Code")
+                        .font(.subheadline)
+                        .foregroundColor(.gray)
+                    TextField("Enter zip code", text: $zip)
+                        .keyboardType(.numberPad)
+                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                        .onChange(of: zip) { oldValue, newValue in
+                            let digits = newValue.filter { $0.isNumber }
+                            if digits != newValue { zip = digits }
+                        }
+                }
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Phone")
+                        .font(.subheadline)
+                        .foregroundColor(.gray)
+                    TextField("Enter phone", text: $phone)
+                        .keyboardType(.numberPad)
+                        .textFieldStyle(RoundedBorderTextFieldStyle())
+                        .onChange(of: phone) { oldValue, newValue in
+                            let digits = newValue.filter { $0.isNumber }
+                            if digits != newValue { phone = digits }
+                        }
+                }
                 field("Email", text: $email)
                 field("Description", text: $description)
             }
             
-            Button("Save") {
-                print("✅ Store saved")
-            }
+            Button("Save") { onSave() }
             .frame(maxWidth: .infinity)
             .padding()
-            .background(Color.blue)
+            .background(isSaveEnabled ? Color.blue : Color.gray)
             .foregroundColor(.white)
             .cornerRadius(12)
             .padding(.top, 10)
+            .disabled(!isSaveEnabled)
         }
         .padding()
         .background(RoundedRectangle(cornerRadius: 16).fill(Color.white).shadow(radius: 4))
@@ -224,8 +366,11 @@ struct StoreDetailsView: View {
                 .foregroundColor(.gray)
             TextField("Enter \(title.lowercased())", text: text)
                 .textFieldStyle(RoundedBorderTextFieldStyle())
+                .textInputAutocapitalization(.never)
+                .autocorrectionDisabled(true)
         }
     }
+    var onSave: () -> Void = {}
 }
 
 // Inventory View
@@ -234,6 +379,9 @@ struct InventoryView: View {
     @Binding var products: [InventoryProduct]
     @Binding var showCreateForm: Bool
     @Binding var showEditForm: Bool
+    var isReadOnly: Bool = false
+    var onDelete: (InventoryProduct) -> Void = { _ in }
+    var onEdit: (InventoryProduct) -> Void = { _ in }
     
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -243,7 +391,7 @@ struct InventoryView: View {
                     .fontWeight(.semibold)
                 Spacer()
                 Button(action: {
-                    showCreateForm = true
+                    if !isReadOnly { showCreateForm = true }
                 }) {
                     HStack {
                         Image(systemName: "plus.circle.fill")
@@ -251,7 +399,7 @@ struct InventoryView: View {
                     }
                     .padding(.horizontal, 14)
                     .padding(.vertical, 8)
-                    .background(Color.blue)
+                    .background(isReadOnly ? Color.gray : Color.blue)
                     .foregroundColor(.white)
                     .cornerRadius(10)
                 }
@@ -261,6 +409,8 @@ struct InventoryView: View {
                 .padding(10)
                 .background(Color(.systemGray6))
                 .cornerRadius(10)
+                .textInputAutocapitalization(.never)
+                .autocorrectionDisabled(true)
             
             let filteredProducts = products.filter { product in
                 searchText.isEmpty ||
@@ -287,19 +437,17 @@ struct InventoryView: View {
                                 .fontWeight(.bold)
                             HStack(spacing: 10) {
                                 Button(action: {
-                                    if product.id == products.first?.id {
-                                        showEditForm = true
-                                    }
+                                    if !isReadOnly { onEdit(product) }
                                 }) {
                                     Image(systemName: "pencil.circle.fill")
-                                        .foregroundColor(.blue)
+                                        .foregroundColor(isReadOnly ? .gray : .blue)
                                         .font(.title3)
                                 }
                                 Button(action: {
-                                    print("🗑️ Delete \(product.name)")
+                                    if !isReadOnly { onDelete(product) }
                                 }) {
                                     Image(systemName: "trash.circle.fill")
-                                        .foregroundColor(.red)
+                                        .foregroundColor(isReadOnly ? .gray : .red)
                                         .font(.title3)
                                 }
                             }
@@ -321,7 +469,30 @@ struct ProductFormView: View {
     @State var name: String
     @State var description: String
     @State var price: String
+    var existingNames: [String] = []
+    var excludeName: String? = nil
     var onCancel: () -> Void
+    var onSave: (String, String, Double) -> Void = { _,_,_  in }
+    
+    @State private var validationError: String = ""
+    
+    private var nameError: String? {
+        let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        if trimmedName.isEmpty { return "Name is required" }
+        let lower = trimmedName.lowercased()
+        if let exclude = excludeName?.lowercased(), lower == exclude { return nil }
+        if existingNames.contains(lower) { return "Product name already exists" }
+        return nil
+    }
+    private var priceError: String? {
+        guard !price.isEmpty else { return "Price is required" }
+        if Double(price) == nil { return "Price must be a number" }
+        if let p = Double(price), p < 0 { return "Price cannot be negative" }
+        return nil
+    }
+    private var isValid: Bool {
+        return nameError == nil && priceError == nil
+    }
     
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -329,28 +500,74 @@ struct ProductFormView: View {
                 .font(.title3)
                 .fontWeight(.semibold)
             
-            Group {
-                field("Product Name", text: $name)
-                field("Description", text: $description)
-                field("Price", text: $price)
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Product Name")
+                    .font(.subheadline)
+                    .foregroundColor(.gray)
+                TextField("Enter product name", text: $name)
+                    .textFieldStyle(RoundedBorderTextFieldStyle())
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled(true)
+            }
+            
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Description")
+                    .font(.subheadline)
+                    .foregroundColor(.gray)
+                TextField("Enter description", text: $description)
+                    .textFieldStyle(RoundedBorderTextFieldStyle())
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled(true)
+            }
+            
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Price")
+                    .font(.subheadline)
+                    .foregroundColor(.gray)
+                TextField("Enter price", text: $price)
+                    .keyboardType(.decimalPad)
+                    .textFieldStyle(RoundedBorderTextFieldStyle())
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled(true)
+                    .onChange(of: price) { oldValue, newValue in
+                        let filtered = newValue.filter { "0123456789.".contains($0) }
+                        var result = ""
+                        var dotSeen = false
+                        for ch in filtered {
+                            if ch == "." {
+                                if dotSeen { continue }
+                                dotSeen = true
+                            }
+                            result.append(ch)
+                        }
+                        if result != newValue { price = result }
+                    }
             }
             
             HStack {
-                Button("Cancel") {
-                    onCancel()
+                Button(action: { onCancel() }) {
+                    Text("Cancel")
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 48)
+                        .contentShape(Rectangle())
                 }
-                .frame(maxWidth: .infinity)
-                .padding()
                 .background(Color.gray.opacity(0.3))
                 .foregroundColor(.black)
                 .cornerRadius(12)
                 
-                Button("Save") {
-                    print("✅ \(title) saved")
-                    onCancel()
+                Button(action: {
+                    if isValid, let p = Double(price) {
+                        onSave(name.trimmingCharacters(in: .whitespacesAndNewlines), description, p)
+                        onCancel()
+                    } else {
+                        validationError = nameError ?? priceError ?? "Please fix errors"
+                    }
+                }) {
+                    Text("Save")
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 48)
+                        .contentShape(Rectangle())
                 }
-                .frame(maxWidth: .infinity)
-                .padding()
                 .background(Color.blue)
                 .foregroundColor(.white)
                 .cornerRadius(12)
@@ -358,19 +575,71 @@ struct ProductFormView: View {
             .padding(.top, 10)
         }
         .padding()
-    }
-    
-    func field(_ title: String, text: Binding<String>) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(title)
-                .font(.subheadline)
-                .foregroundColor(.gray)
-            TextField("Enter \(title.lowercased())", text: text)
-                .textFieldStyle(RoundedBorderTextFieldStyle())
+        .alert("Invalid Product", isPresented: Binding(get: { !validationError.isEmpty }, set: { if !$0 { validationError = "" } })) {
+            Button("OK", role: .cancel) { validationError = "" }
+        } message: {
+            Text(validationError)
         }
     }
 }
 
-#Preview {
-    DashboardView()
+private struct FloatingHint: ViewModifier {
+    let message: String?
+    func body(content: Content) -> some View {
+        content.overlay(alignment: .topLeading) {
+            if let message, !message.isEmpty {
+                Text(message)
+                    .font(.footnote)
+                    .foregroundColor(.red)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 6)
+            }
+        }
+    }
+}
+
+private extension View {
+    func floatingHint(_ message: String?) -> some View { modifier(FloatingHint(message: message)) }
+}
+
+#Preview { DashboardView() }
+
+extension DashboardView {
+    func ensureOwnedStoreAndBind() {
+        guard let emailOwner = auth.currentEmail?.lowercased() else { return }
+        if stores.first(where: { $0.ownerEmail?.lowercased() == emailOwner }) == nil {
+            let emptyStore = StoreEntity(name: "", address: "", phone: "", email: emailOwner, zip: "", storeDescription: "", products: [], ownerEmail: emailOwner)
+            modelContext.insert(emptyStore)
+            try? modelContext.save()
+        }
+        bindFromStore()
+    }
+    func bindFromStore() {
+        let userEmailLowercased = auth.currentEmail?.lowercased()
+        guard let ownerEmail = userEmailLowercased, let owned = stores.first(where: { $0.ownerEmail?.lowercased() == ownerEmail }) else {
+            storeName = ""
+            address = ""
+            phone = ""
+            email = ""
+            zip = ""
+            description = ""
+            products = []
+            return
+        }
+        storeName = owned.name
+        address = owned.address
+        phone = owned.phone
+        email = owned.email
+        zip = owned.zip
+        description = owned.storeDescription
+        products = owned.products.map { InventoryProduct(name: $0.name, description: $0.productDescription, price: $0.price) }
+    }
+    func reloadFromStore() { bindFromStore() }
+    func currentOwnedStore() -> StoreEntity? {
+        guard let emailOwner = auth.currentEmail?.lowercased() else { return nil }
+        return stores.first(where: { $0.ownerEmail?.lowercased() == emailOwner })
+    }
+    func existingProductNames() -> [String] {
+        currentOwnedStore()?.products.map { $0.name.lowercased() } ?? []
+    }
 }

@@ -9,9 +9,9 @@ import SwiftUI
 struct TermsView: View {
     var body: some View {
         ScrollView {
-            VStack(spacing: 30) {
+            VStack(spacing: 30) { // same spacing as AboutView
                 
-                // Header Icon
+                // MARK: Header Icon
                 ZStack {
                     Circle()
                         .fill(LinearGradient(colors: [.orange, .red], startPoint: .topLeading, endPoint: .bottomTrailing))
@@ -24,16 +24,16 @@ struct TermsView: View {
                         .frame(width: 55, height: 55)
                         .foregroundColor(.white)
                 }
-                .padding(.top, 30)
+                .padding(.top, 30) // same as AboutView
                 
-                // Title
+                // MARK: Title
                 Text("Terms & Conditions")
                     .font(.title)
                     .fontWeight(.bold)
                     .foregroundColor(.primary)
                 
-                // Terms Cards
-                VStack(alignment: .leading, spacing: 16) {
+                // MARK: Terms Cards
+                VStack(alignment: .leading, spacing: 16) { // same spacing as AboutCard
                     TermsCard(title: "Responsibility", description: "You are responsible for the accuracy of store and product information.")
                     TermsCard(title: "Information Purpose", description: "This app is for informational purposes only.")
                     TermsCard(title: "Liability", description: "We are not liable for any loss or damages resulting from use of the app.")
@@ -41,8 +41,8 @@ struct TermsView: View {
                 }
                 .padding(.horizontal)
                 
-                // Footer
-                VStack(spacing: 8) { 
+                // MARK: Footer
+                VStack(spacing: 8) { // same spacing as AboutView footer
                     Text("Version 1.0.0")
                         .font(.footnote)
                         .foregroundColor(.gray)
@@ -55,7 +55,7 @@ struct TermsView: View {
                 
                 Spacer()
             }
-            .padding() 
+            .padding() // same padding as AboutView
         }
         .background(
             LinearGradient(colors: [Color(.systemGray6), Color.white], startPoint: .top, endPoint: .bottom)
@@ -66,13 +66,13 @@ struct TermsView: View {
     }
 }
 
-// Terms Card Component
+// MARK: - Terms Card Component
 struct TermsCard: View {
     let title: String
     let description: String
     
     var body: some View {
-        HStack(alignment: .top, spacing: 12) {
+        HStack(alignment: .top, spacing: 12) { // same layout as AboutCard
             ZStack {
                 Circle()
                     .fill(Color.orange.opacity(0.15))
@@ -102,6 +102,7 @@ struct TermsCard: View {
     }
 }
 
+// MARK: - Preview
 #Preview {
     NavigationStack {
         TermsView()

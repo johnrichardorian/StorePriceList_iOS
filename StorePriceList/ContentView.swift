@@ -6,8 +6,9 @@
 //
 
 import SwiftUI
+import SwiftData
 
-// models for database
+// MARK: - Models
 struct Store: Identifiable {
     let id = UUID()
     let name: String
@@ -25,58 +26,31 @@ struct Product: Identifiable {
     let price: Double
 }
 
-// This is for my main view
+// MARK: - Main View
 struct ContentView: View {
-    
+    @EnvironmentObject var auth: AuthState
+    @Query(sort: \StoreEntity.name, order: .forward) private var storeEntities: [StoreEntity]
     @State private var searchText: String = ""
     @State private var showLogin: Bool = false
     @State private var showRegister: Bool = false
     @State private var showDashboard: Bool = false
-    
-    // Example Data
-    let stores: [Store] = [
-        Store(
-            name: "John's Store",
-            address: "Lucena, 4302",
-            phone: "0932032621398",
-            email: "john@gmail.com",
-            description: "Tindahan",
-            products: [
-                Product(name: "Bawang", description: "Seasoning", price: 1),
-                Product(name: "Sibuyas", description: "Seasoning", price: 2),
-                Product(name: "Paminta", description: "Seasoning", price: 3),
-                Product(name: "Toyo", description: "Seasoning", price: 4),
-                Product(name: "Suka", description: "Pansahog", price: 5),
-                Product(name: "UTANG MUNA", description: "SA LUNES BABAYARAN", price: 999)
-            ]
-        ),
-        Store(
-            name: "Richard's Store",
-            address: "Manila, 1231321",
-            phone: "09328931123",
-            email: "richard@gmail.com",
-            description: "STORE",
-            products: [
-                Product(name: "Water", description: "Water", price: 123),
-                Product(name: "Mineral", description: "Water", price: 456)
-            ]
-        ),
-        Store(
-            name: "Oria's Store",
-            address: "Canada, 453",
-            phone: "092317312",
-            email: "orian@gmail.com",
-            description: "WAG LAMANAN ANG PRODUCT",
-            products: []
-        )
-    ]
-    
-    // Search beta filtering
+    var stores: [Store] {
+        storeEntities.map { se in
+            Store(
+                name: se.name,
+                address: "\(se.address), \(se.zip)",
+                phone: se.phone,
+                email: se.email,
+                description: se.storeDescription,
+                products: se.products.map { Product(name: $0.name, description: $0.productDescription, price: $0.price) }
+            )
+        }
+    }
     var filteredStores: [Store] {
-        if searchText.isEmpty {
-            return stores
+        let filtered = if searchText.isEmpty { 
+            stores 
         } else {
-            return stores.filter { store in
+            stores.filter { store in
                 store.name.localizedCaseInsensitiveContains(searchText) ||
                 store.description.localizedCaseInsensitiveContains(searchText) ||
                 store.products.contains {
@@ -85,6 +59,7 @@ struct ContentView: View {
                 }
             }
         }
+        return filtered.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
     }
     
     var body: some View {
@@ -103,7 +78,7 @@ struct ContentView: View {
                 ScrollView {
                     LazyVStack(spacing: 20) {
                         ForEach(filteredStores) { store in
-                            StoreCard(store: store)
+                            StoreCard(store: store, searchText: searchText)
                         }
                     }
                     .padding()
@@ -113,7 +88,7 @@ struct ContentView: View {
                 // MARK: Footer
                 FooterView()
             }
-            .frame(width: 402, height: 874) // iPhone 16 Pro size
+            .frame(width: 402, height: 874) // iPhone 16 Pro logical size
             .navigationDestination(isPresented: $showLogin) {
                 LoginView()
             }
@@ -121,7 +96,7 @@ struct ContentView: View {
     }
 }
 
-// my header
+// MARK: - Header
 struct HeaderView: View {
     @Binding var showLogin: Bool
     
@@ -131,7 +106,7 @@ struct HeaderView: View {
                 .ignoresSafeArea(edges: .top)
             
             HStack {
-                // Login Button
+                // ✅ Login Button
                 Button(action: {
                     showLogin = true
                 }) {
@@ -158,7 +133,7 @@ struct HeaderView: View {
     }
 }
 
-// searchbar
+// MARK: - SearchBar
 struct SearchBar: View {
     @Binding var text: String
     
@@ -168,6 +143,8 @@ struct SearchBar: View {
                 .foregroundColor(.gray)
             TextField("Search stores or products...", text: $text)
                 .foregroundColor(.primary)
+                .textInputAutocapitalization(.never)
+                .autocorrectionDisabled(true)
         }
         .padding(12)
         .background(Color(.systemGray6))
@@ -175,16 +152,65 @@ struct SearchBar: View {
     }
 }
 
+// MARK: - HighlightedText
+struct HighlightedText: View {
+    let text: String
+    let searchText: String
+    let highlightColor: Color
+    let textColor: Color
+    
+    init(text: String, searchText: String, highlightColor: Color = .orange, textColor: Color = .white) {
+        self.text = text
+        self.searchText = searchText
+        self.highlightColor = highlightColor
+        self.textColor = textColor
+    }
+    
+    var body: some View {
+        if searchText.isEmpty {
+            Text(text)
+        } else {
+            let highlightedText = highlightText(text, searchText: searchText)
+            highlightedText
+        }
+    }
+    
+    @ViewBuilder
+    private func highlightText(_ text: String, searchText: String) -> some View {
+        let lowercaseText = text.lowercased()
+        let lowercaseSearch = searchText.lowercased()
+        
+        if let range = lowercaseText.range(of: lowercaseSearch) {
+            let beforeMatch = String(text[..<range.lowerBound])
+            let match = String(text[range])
+            let afterMatch = String(text[range.upperBound...])
+            
+            HStack(spacing: 0) {
+                Text(beforeMatch)
+                Text(match)
+                    .foregroundColor(textColor)
+                    .background(highlightColor)
+                    .fontWeight(.bold)
+                Text(afterMatch)
+            }
+        } else {
+            Text(text)
+        }
+    }
+}
+
+// MARK: - StoreCard
 struct StoreCard: View {
     let store: Store
+    let searchText: String
     
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(store.name)
+            HighlightedText(text: store.name, searchText: searchText, highlightColor: .blue, textColor: .white)
                 .font(.title3)
                 .fontWeight(.semibold)
             
-            Text(store.description)
+            HighlightedText(text: store.description, searchText: searchText, highlightColor: .green, textColor: .white)
                 .font(.subheadline)
                 .foregroundColor(.secondary)
             
@@ -208,10 +234,10 @@ struct StoreCard: View {
                 VStack(alignment: .leading, spacing: 6) {
                     ForEach(store.products) { product in
                         HStack {
-                            Text(product.name)
+                            HighlightedText(text: product.name, searchText: searchText, highlightColor: .orange, textColor: .white)
                                 .fontWeight(.medium)
                             Spacer()
-                            Text(product.description)
+                            HighlightedText(text: product.description, searchText: searchText, highlightColor: .purple, textColor: .white)
                                 .foregroundColor(.secondary)
                             Spacer()
                             Text("₱\(String(format: "%.2f", product.price))")
@@ -232,7 +258,7 @@ struct StoreCard: View {
     }
 }
 
-// footer again
+// MARK: - Footer
 struct FooterView: View {
     var body: some View {
         VStack(spacing: 12) {
@@ -277,6 +303,7 @@ struct FooterView: View {
 }
 
 
+// MARK: - Preview
 #Preview {
     ContentView()
 }
