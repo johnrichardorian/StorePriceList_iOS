@@ -46,8 +46,17 @@ struct ContentView: View {
             )
         }
     }
-    var sortedStores: [Store] {
-        return stores.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+    var filteredStores: [Store] {
+        let base = stores.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+        guard !searchText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return base }
+        return base.filter { store in
+            store.name.localizedCaseInsensitiveContains(searchText) ||
+            store.description.localizedCaseInsensitiveContains(searchText) ||
+            store.products.contains {
+                $0.name.localizedCaseInsensitiveContains(searchText) ||
+                $0.description.localizedCaseInsensitiveContains(searchText)
+            }
+        }
     }
     
     var body: some View {
@@ -65,8 +74,8 @@ struct ContentView: View {
                 // MARK: Scrollable Content
                 ScrollView {
                     LazyVStack(spacing: 20) {
-                        ForEach(sortedStores) { store in
-                            StoreCard(store: store)
+                        ForEach(filteredStores) { store in
+                            StoreCard(store: store, searchText: searchText)
                         }
                     }
                     .padding()
@@ -143,14 +152,15 @@ struct SearchBar: View {
 // MARK: - StoreCard
 struct StoreCard: View {
     let store: Store
+    let searchText: String
     
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(store.name)
+            highlight(text: store.name, color: .blue)
                 .font(.title3)
                 .fontWeight(.semibold)
             
-            Text(store.description)
+            highlight(text: store.description, color: .green)
                 .font(.subheadline)
                 .foregroundColor(.secondary)
             
@@ -188,10 +198,10 @@ struct StoreCard: View {
                     
                     ForEach(store.products) { product in
                         HStack {
-                            Text(product.name)
+                            highlight(text: product.name, color: .orange)
                                 .fontWeight(.medium)
                             Spacer()
-                            Text(product.description)
+                            highlight(text: product.description, color: .purple)
                                 .foregroundColor(.secondary)
                             Spacer()
                             Text("₱\(String(format: "%.2f", product.price))")
@@ -210,6 +220,34 @@ struct StoreCard: View {
                 .fill(Color.white)
                 .shadow(color: .black.opacity(0.08), radius: 6, x: 0, y: 3)
         )
+    }
+}
+
+private extension StoreCard {
+    @ViewBuilder
+    func highlight(text: String, color: Color) -> some View {
+        let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+        if query.isEmpty {
+            Text(text)
+        } else {
+            let lower = text.lowercased()
+            let qLower = query.lowercased()
+            if let range = lower.range(of: qLower) {
+                let before = String(text[..<range.lowerBound])
+                let match = String(text[range])
+                let after = String(text[range.upperBound...])
+                HStack(spacing: 0) {
+                    Text(before)
+                    Text(match)
+                        .foregroundColor(.white)
+                        .background(color)
+                        .fontWeight(.bold)
+                    Text(after)
+                }
+            } else {
+                Text(text)
+            }
+        }
     }
 }
 

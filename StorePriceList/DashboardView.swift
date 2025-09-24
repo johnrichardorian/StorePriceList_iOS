@@ -31,6 +31,7 @@ struct DashboardView: View {
     
     // Products (from SwiftData)
     @State private var products: [InventoryProduct] = []
+    @State private var productSearchText: String = ""
     
     // Modals
     @State private var showCreateForm = false
@@ -181,7 +182,8 @@ struct DashboardView: View {
                                                     showSavedAlert = true
                                                  })
                             } else {
-                                InventoryView(products: $products,
+                                InventoryView(searchText: $productSearchText,
+                                              products: $products,
                                               showCreateForm: $showCreateForm,
                                               showEditForm: $showEditForm,
                                               isReadOnly: !auth.isLoggedIn,
@@ -440,6 +442,7 @@ struct InventoryProduct: Identifiable {
 
 // Inventory View
 struct InventoryView: View {
+    @Binding var searchText: String
     @Binding var products: [InventoryProduct]
     @Binding var showCreateForm: Bool
     @Binding var showEditForm: Bool
@@ -468,12 +471,23 @@ struct InventoryView: View {
                     .cornerRadius(10)
                 }
             }
+            TextField("Search products...", text: $searchText)
+                .padding(10)
+                .background(Color(.systemGray6))
+                .cornerRadius(10)
+                .textInputAutocapitalization(.never)
+                .autocorrectionDisabled(true)
             
-            if products.isEmpty {
+            let filtered = products.filter { p in
+                searchText.isEmpty ||
+                p.name.localizedCaseInsensitiveContains(searchText) ||
+                p.description.localizedCaseInsensitiveContains(searchText)
+            }
+            if filtered.isEmpty {
                 Text("No products found")
                     .foregroundColor(.secondary)
             } else {
-                ForEach(products) { product in
+                ForEach(filtered) { product in
                     VStack(alignment: .leading, spacing: 8) {
                         HStack {
                             VStack(alignment: .leading) {
