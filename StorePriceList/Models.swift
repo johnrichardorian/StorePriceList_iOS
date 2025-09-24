@@ -63,28 +63,14 @@ final class StoreEntity {
     var zip: String
     var storeDescription: String
     var ownerEmail: String?
-    @Relationship(deleteRule: .cascade) var products: [ProductEntity]
-    init(name: String, address: String, phone: String, email: String, zip: String, storeDescription: String, products: [ProductEntity] = [], ownerEmail: String? = nil) {
+    init(name: String, address: String, phone: String, email: String, zip: String, storeDescription: String, ownerEmail: String? = nil) {
         self.name = name
         self.address = address
         self.phone = phone
         self.email = email
         self.zip = zip
         self.storeDescription = storeDescription
-        self.products = products
         self.ownerEmail = ownerEmail
-    }
-}
-
-@Model
-final class ProductEntity {
-    var name: String
-    var productDescription: String
-    var price: Double
-    init(name: String, productDescription: String, price: Double) {
-        self.name = name
-        self.productDescription = productDescription
-        self.price = price
     }
 }
 

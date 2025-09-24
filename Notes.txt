@@ -1,0 +1,7 @@
+25% --- Static design lang
+
+50% --- Create and Login account with store details that displaying in public landing page
+
+75% --- CRUD of Item , with displaying in public landing page
+
+100% --- Search engine for Item , and Search engine for public landing page

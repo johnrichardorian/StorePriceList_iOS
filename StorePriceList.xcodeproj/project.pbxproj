@@ -6,6 +6,10 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		3F834C9C2E83B0140098485C /* Notes.txt in Resources */ = {isa = PBXBuildFile; fileRef = 3F834C9A2E83B00E0098485C /* Notes.txt */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		3FCA94B52E604B6900C9A75D /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -24,6 +28,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		3F834C9A2E83B00E0098485C /* Notes.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = Notes.txt; sourceTree = "<group>"; };
 		3FCA94A42E604B6800C9A75D /* StorePriceList.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = StorePriceList.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		3FCA94B42E604B6900C9A75D /* StorePriceListTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = StorePriceListTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		3FCA94BE2E604B6900C9A75D /* StorePriceListUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = StorePriceListUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -78,6 +83,7 @@
 				3FCA94A62E604B6800C9A75D /* StorePriceList */,
 				3FCA94B72E604B6900C9A75D /* StorePriceListTests */,
 				3FCA94C12E604B6900C9A75D /* StorePriceListUITests */,
+				3F834C9A2E83B00E0098485C /* Notes.txt */,
 				3FCA94A52E604B6800C9A75D /* Products */,
 			);
 			sourceTree = "<group>";
@@ -212,6 +218,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				3F834C9C2E83B0140098485C /* Notes.txt in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

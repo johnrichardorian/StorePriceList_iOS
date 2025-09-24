@@ -16,14 +16,6 @@ struct Store: Identifiable {
     let phone: String
     let email: String
     let description: String
-    let products: [Product]
-}
-
-struct Product: Identifiable {
-    let id = UUID()
-    let name: String
-    let description: String
-    let price: Double
 }
 
 // MARK: - Main View
@@ -41,25 +33,12 @@ struct ContentView: View {
                 address: "\(se.address), \(se.zip)",
                 phone: se.phone,
                 email: se.email,
-                description: se.storeDescription,
-                products: se.products.map { Product(name: $0.name, description: $0.productDescription, price: $0.price) }
+                description: se.storeDescription
             )
         }
     }
-    var filteredStores: [Store] {
-        let filtered = if searchText.isEmpty { 
-            stores 
-        } else {
-            stores.filter { store in
-                store.name.localizedCaseInsensitiveContains(searchText) ||
-                store.description.localizedCaseInsensitiveContains(searchText) ||
-                store.products.contains {
-                    $0.name.localizedCaseInsensitiveContains(searchText) ||
-                    $0.description.localizedCaseInsensitiveContains(searchText)
-                }
-            }
-        }
-        return filtered.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+    var sortedStores: [Store] {
+        return stores.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
     }
     
     var body: some View {
@@ -77,8 +56,8 @@ struct ContentView: View {
                 // MARK: Scrollable Content
                 ScrollView {
                     LazyVStack(spacing: 20) {
-                        ForEach(filteredStores) { store in
-                            StoreCard(store: store, searchText: searchText)
+                        ForEach(sortedStores) { store in
+                            StoreCard(store: store)
                         }
                     }
                     .padding()
@@ -152,65 +131,17 @@ struct SearchBar: View {
     }
 }
 
-// MARK: - HighlightedText
-struct HighlightedText: View {
-    let text: String
-    let searchText: String
-    let highlightColor: Color
-    let textColor: Color
-    
-    init(text: String, searchText: String, highlightColor: Color = .orange, textColor: Color = .white) {
-        self.text = text
-        self.searchText = searchText
-        self.highlightColor = highlightColor
-        self.textColor = textColor
-    }
-    
-    var body: some View {
-        if searchText.isEmpty {
-            Text(text)
-        } else {
-            let highlightedText = highlightText(text, searchText: searchText)
-            highlightedText
-        }
-    }
-    
-    @ViewBuilder
-    private func highlightText(_ text: String, searchText: String) -> some View {
-        let lowercaseText = text.lowercased()
-        let lowercaseSearch = searchText.lowercased()
-        
-        if let range = lowercaseText.range(of: lowercaseSearch) {
-            let beforeMatch = String(text[..<range.lowerBound])
-            let match = String(text[range])
-            let afterMatch = String(text[range.upperBound...])
-            
-            HStack(spacing: 0) {
-                Text(beforeMatch)
-                Text(match)
-                    .foregroundColor(textColor)
-                    .background(highlightColor)
-                    .fontWeight(.bold)
-                Text(afterMatch)
-            }
-        } else {
-            Text(text)
-        }
-    }
-}
-
 // MARK: - StoreCard
 struct StoreCard: View {
     let store: Store
-    let searchText: String
     
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            HighlightedText(text: store.name, searchText: searchText, highlightColor: .blue, textColor: .white)
+            Text(store.name)
                 .font(.title3)
                 .fontWeight(.semibold)
             
-            HighlightedText(text: store.description, searchText: searchText, highlightColor: .green, textColor: .white)
+            Text(store.description)
                 .font(.subheadline)
                 .foregroundColor(.secondary)
             
@@ -226,28 +157,19 @@ struct StoreCard: View {
             
             Divider()
             
-            if store.products.isEmpty {
-                Text("No products available")
-                    .italic()
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Items")
+                    .font(.subheadline)
+                    .fontWeight(.semibold)
+                    .foregroundColor(.primary)
+                
+                Text("No items available")
+                    .font(.footnote)
                     .foregroundColor(.secondary)
-            } else {
-                VStack(alignment: .leading, spacing: 6) {
-                    ForEach(store.products) { product in
-                        HStack {
-                            HighlightedText(text: product.name, searchText: searchText, highlightColor: .orange, textColor: .white)
-                                .fontWeight(.medium)
-                            Spacer()
-                            HighlightedText(text: product.description, searchText: searchText, highlightColor: .purple, textColor: .white)
-                                .foregroundColor(.secondary)
-                            Spacer()
-                            Text("₱\(String(format: "%.2f", product.price))")
-                                .fontWeight(.semibold)
-                        }
-                        Divider()
-                    }
-                }
-                .font(.footnote)
+                    .italic()
+                    .padding(.vertical, 8)
             }
+            
         }
         .padding()
         .background(
