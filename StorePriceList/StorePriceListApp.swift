@@ -33,7 +33,8 @@ struct StorePriceListApp: App {
 private let previewContainer: ModelContainer = {
     let schema = Schema([
         Account.self,
-        StoreEntity.self
+        StoreEntity.self,
+        ProductEntity.self
     ])
     let configuration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
     let container = try! ModelContainer(for: schema, configurations: [configuration])
@@ -51,7 +52,8 @@ private let previewContainer: ModelContainer = {
 private var sharedModelContainer: ModelContainer = {
     let schema = Schema([
         Account.self,
-        StoreEntity.self
+        StoreEntity.self,
+        ProductEntity.self
     ])
     let configuration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
     do {

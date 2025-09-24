@@ -16,6 +16,14 @@ struct Store: Identifiable {
     let phone: String
     let email: String
     let description: String
+    let products: [Product]
+}
+
+struct Product: Identifiable {
+    let id = UUID()
+    let name: String
+    let description: String
+    let price: Double
 }
 
 // MARK: - Main View
@@ -33,7 +41,8 @@ struct ContentView: View {
                 address: "\(se.address), \(se.zip)",
                 phone: se.phone,
                 email: se.email,
-                description: se.storeDescription
+                description: se.storeDescription,
+                products: se.products.map { Product(name: $0.name, description: $0.productDescription, price: $0.price) }
             )
         }
     }
@@ -157,17 +166,41 @@ struct StoreCard: View {
             
             Divider()
             
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Items")
-                    .font(.subheadline)
-                    .fontWeight(.semibold)
-                    .foregroundColor(.primary)
-                
-                Text("No items available")
-                    .font(.footnote)
-                    .foregroundColor(.secondary)
-                    .italic()
-                    .padding(.vertical, 8)
+            if store.products.isEmpty {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Items")
+                        .font(.subheadline)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.primary)
+                    
+                    Text("No items available")
+                        .font(.footnote)
+                        .foregroundColor(.secondary)
+                        .italic()
+                        .padding(.vertical, 8)
+                }
+            } else {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Items")
+                        .font(.subheadline)
+                        .fontWeight(.semibold)
+                        .foregroundColor(.primary)
+                    
+                    ForEach(store.products) { product in
+                        HStack {
+                            Text(product.name)
+                                .fontWeight(.medium)
+                            Spacer()
+                            Text(product.description)
+                                .foregroundColor(.secondary)
+                            Spacer()
+                            Text("₱\(String(format: "%.2f", product.price))")
+                                .fontWeight(.semibold)
+                        }
+                        Divider()
+                    }
+                }
+                .font(.footnote)
             }
             
         }
