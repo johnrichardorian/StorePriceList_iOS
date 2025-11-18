@@ -66,6 +66,5 @@ private var sharedModelContainer: ModelContainer = {
 }()
 
 private func seedIfNeeded(container: ModelContainer) throws {
-    // No seed data needed - users will create their own accounts and stores
-    // Demo data is available in preview container for testing purposes only
+ 
 }
